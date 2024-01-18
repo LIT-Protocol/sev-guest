@@ -17,14 +17,15 @@
 #include <snp-derive-key.h>
 
 #ifndef PROG_NAME
-#define PROG_NAME	"sev-guest-kdf"
+#define PROG_NAME "sev-guest-kdf"
 #endif
 
-#define NR_ARGS_REQUIRED	(2)
+#define NR_ARGS_REQUIRED (2)
 
-#define SEV_GUEST_DEVICE	"/dev/sev-guest"
+#define SEV_GUEST_DEVICE "/dev/sev-guest"
 
-struct options {
+struct options
+{
 	union tcb_version tcb;
 
 	const char *key_filename;
@@ -39,62 +40,64 @@ struct options {
 void print_usage(void)
 {
 	fprintf(stderr,
-		"Usage: " PROG_NAME " [-f|--family-id] [-h|--help] [-i|--image-id]\n"
-		"       [-m|--measurement] [-p|--policy] [-r|--root-key]\n"
-	        "       [-s|--guest-svn svn] [-t|--tcb-version version] key_file\n"
-		"\n"
-		"Derive a key bound to either the guest identity or the host platform.\n"
-		"The key will be written to 'key_file'.\n"
-		"\n"
-		"options:\n"
-		"  -f|--family-id\n"
-		"    Mix the Family ID of the guest into the derived key.\n"
-		"    Default: '0000000000000000'\n"
-		"\n"
-		"  -h|--help\n"
-		"    Print this help message.\n"
-		"\n"
-		"  -i|--image-id\n"
-		"    Mix the Image ID of the guest into the derived key.\n"
-		"    Default: '0000000000000000'\n"
-		"\n"
-		"  -m|--measurement\n"
-		"    Mix the launch digest of the guest into the derived key.\n"
-		"    Default: '00000000000000000000000000000000'\n"
-		"\n"
-		"  -p|--policy\n"
-		"    Mix the guest policy into the derived key.\n"
-		"    Default: '0000000000000000'\n"
-		"\n"
-		"  -r|--root-key\n"
-		"    Derive the key from the hash of the VM Root Key supplied during VM launch.\n"
-		"    By default, the platform VCEK is used for key derivation.\n"
-		"\n"
-		"  -s|--guest-svn svn\n"
-		"    Mix the given security version number (SVN) into the derived key.\n"
-		"    The SVN specified must not exceed the SVN supplied at VM launch.\n"
-		"    Default: '00000000'\n"
-		"\n"
-		"  -t|--tcb-version version\n"
-		"    Mix the given TCB version string into the derived key.\n"
-		"    The given TCB version string must not exceed the current TCB version.\n"
-		"    Default: '0000000000000000'\n"
-		"\n");
+			"Usage: " PROG_NAME " [-f|--family-id] [-h|--help] [-i|--image-id]\n"
+			"       [-m|--measurement] [-p|--policy] [-r|--root-key]\n"
+			"       [-s|--guest-svn svn] [-t|--tcb-version version] key_file\n"
+			"\n"
+			"Derive a key bound to either the guest identity or the host platform.\n"
+			"The key will be written to 'key_file'.\n"
+			"\n"
+			"options:\n"
+			"  -f|--family-id\n"
+			"    Mix the Family ID of the guest into the derived key.\n"
+			"    Default: '0000000000000000'\n"
+			"\n"
+			"  -h|--help\n"
+			"    Print this help message.\n"
+			"\n"
+			"  -i|--image-id\n"
+			"    Mix the Image ID of the guest into the derived key.\n"
+			"    Default: '0000000000000000'\n"
+			"\n"
+			"  -m|--measurement\n"
+			"    Mix the launch digest of the guest into the derived key.\n"
+			"    Default: '00000000000000000000000000000000'\n"
+			"\n"
+			"  -p|--policy\n"
+			"    Mix the guest policy into the derived key.\n"
+			"    Default: '0000000000000000'\n"
+			"\n"
+			"  -r|--root-key\n"
+			"    Derive the key from the hash of the VM Root Key supplied during VM launch.\n"
+			"    By default, the platform VCEK is used for key derivation.\n"
+			"\n"
+			"  -s|--guest-svn svn\n"
+			"    Mix the given security version number (SVN) into the derived key.\n"
+			"    The SVN specified must not exceed the SVN supplied at VM launch.\n"
+			"    Default: '00000000'\n"
+			"\n"
+			"  -t|--tcb-version version\n"
+			"    Mix the given TCB version string into the derived key.\n"
+			"    The given TCB version string must not exceed the current TCB version.\n"
+			"    Default: '0000000000000000'\n"
+			"\n");
 }
 
 int set_tcb_version(union tcb_version *tcb, const char *input, size_t size)
 {
 	int rc = EXIT_FAILURE;
-	const char reserved[4] = { '0', '0', '0', '0' };
+	const char reserved[4] = {'0', '0', '0', '0'};
 	char *end = NULL, *error = NULL;
-	char in[2*sizeof(*tcb)] = {0};
+	char in[2 * sizeof(*tcb)] = {0};
 
-	if (!tcb || !input || size < sizeof(*tcb)) {
+	if (!tcb || !input || size < sizeof(*tcb))
+	{
 		rc = EINVAL;
 		goto out;
 	}
 
-	if (memcmp(input + 4, reserved, sizeof(reserved)) != 0) {
+	if (memcmp(input + 4, reserved, sizeof(reserved)) != 0)
+	{
 		rc = EINVAL;
 		goto out;
 	}
@@ -111,7 +114,8 @@ int set_tcb_version(union tcb_version *tcb, const char *input, size_t size)
 	/* Convert the 2-byte microcode patch level */
 	errno = 0;
 	tcb->microcode = strtoul(end - 2, &error, 10);
-	if (errno != 0 || (error && *error != '\0')) {
+	if (errno != 0 || (error && *error != '\0'))
+	{
 		rc = EINVAL;
 		goto out;
 	}
@@ -121,7 +125,8 @@ int set_tcb_version(union tcb_version *tcb, const char *input, size_t size)
 	/* Convert the 2-byte SNP patch level */
 	errno = 0;
 	tcb->snp = strtoul(end - 2, &error, 10);
-	if (errno != 0 || (error && *error != '\0')) {
+	if (errno != 0 || (error && *error != '\0'))
+	{
 		rc = EINVAL;
 		goto out;
 	}
@@ -131,7 +136,8 @@ int set_tcb_version(union tcb_version *tcb, const char *input, size_t size)
 	/* Convert the TEE patch level */
 	errno = 0;
 	tcb->tee = strtoul(end - 2, &error, 10);
-	if (errno != 0 || (error && *error != '\0')) {
+	if (errno != 0 || (error && *error != '\0'))
+	{
 		rc = EINVAL;
 		goto out;
 	}
@@ -141,7 +147,8 @@ int set_tcb_version(union tcb_version *tcb, const char *input, size_t size)
 	/* Convert the boot loader patch level */
 	errno = 0;
 	tcb->boot_loader = strtoul(in, &error, 10);
-	if (errno != 0 || (error && *error != '\0')) {
+	if (errno != 0 || (error && *error != '\0'))
+	{
 		rc = EINVAL;
 		goto out;
 	}
@@ -156,30 +163,33 @@ int parse_options(int argc, char *argv[], struct options *options)
 	int rc = EXIT_FAILURE;
 	char *short_options = "fhimprs:t:";
 	struct option long_options[] = {
-		{ "family-id",    no_argument,       NULL, 'f' },
-		{ "help",         no_argument,       NULL, 'h' },
-		{ "image-id",     no_argument,       NULL, 'i' },
-		{ "measurement",  no_argument,       NULL, 'm' },
-		{ "policy",       no_argument,       NULL, 'p' },
-		{ "root-key",     no_argument,       NULL, 'r' },
-		{ "guest-svn",    required_argument, NULL, 's' },
-		{ "tcb-version",  required_argument, NULL, 't' },
+		{"family-id", no_argument, NULL, 'f'},
+		{"help", no_argument, NULL, 'h'},
+		{"image-id", no_argument, NULL, 'i'},
+		{"measurement", no_argument, NULL, 'm'},
+		{"policy", no_argument, NULL, 'p'},
+		{"root-key", no_argument, NULL, 'r'},
+		{"guest-svn", required_argument, NULL, 's'},
+		{"tcb-version", required_argument, NULL, 't'},
 		{0},
 	};
 
-	if (argc < NR_ARGS_REQUIRED || !argv || !options) {
+	if (argc < NR_ARGS_REQUIRED || !argv || !options)
+	{
 		rc = EINVAL;
 		goto out;
 	}
 
-	do {
+	do
+	{
 		char *end = NULL;
 		char option = getopt_long(argc, argv,
-					  short_options, long_options, NULL);
+								  short_options, long_options, NULL);
 		if (option == -1)
 			break;
 
-		switch (option) {
+		switch (option)
+		{
 		case 'f':
 			options->fields |= FIELD_FAMILY_ID_MASK;
 			break;
@@ -203,7 +213,8 @@ int parse_options(int argc, char *argv[], struct options *options)
 
 			errno = 0;
 			options->svn = strtoul(optarg, &end, 10);
-			if (errno != 0 || *end != '\0') {
+			if (errno != 0 || *end != '\0')
+			{
 				rc = EINVAL;
 				goto out;
 			}
@@ -224,18 +235,21 @@ int parse_options(int argc, char *argv[], struct options *options)
 		}
 	} while (1);
 
-	if (optind == argc && !options->do_help) {
+	if (optind == argc && !options->do_help)
+	{
 		fprintf(stderr, PROG_NAME ": must specify a key file.\n\n");
 		rc = EINVAL;
 		goto out;
 	}
 
-	if (optind < argc) {
+	if (optind < argc)
+	{
 		options->key_filename = argv[optind];
 		optind++;
 	}
 
-	if (optind < argc) {
+	if (optind < argc)
+	{
 		fprintf(stderr, PROG_NAME ": too many non-option arguments.\n\n");
 		rc = EINVAL;
 		goto out;
@@ -255,7 +269,8 @@ int request_key(struct options *options, uint8_t *key, size_t size)
 	struct snp_guest_request_ioctl guest_req;
 	struct msg_key_resp *key_resp = (struct msg_key_resp *)&resp.data;
 
-	if (!options || !key || size < sizeof(key_resp->derived_key)) {
+	if (!options || !key || size < sizeof(key_resp->derived_key))
+	{
 		rc = EINVAL;
 		goto out;
 	}
@@ -263,7 +278,7 @@ int request_key(struct options *options, uint8_t *key, size_t size)
 	/* Initialize data structures */
 	memset(&req, 0, sizeof(req));
 	req.root_key_select = options->do_root_key ? MSG_KEY_REQ_ROOT_KEY_SELECT_MASK
-							: 0;
+											   : 0;
 	req.guest_field_select = options->fields;
 	req.guest_svn = options->svn;
 	memcpy(&req.tcb_version, &options->tcb, sizeof(req.tcb_version));
@@ -272,13 +287,14 @@ int request_key(struct options *options, uint8_t *key, size_t size)
 
 	memset(&guest_req, 0, sizeof(guest_req));
 	guest_req.msg_version = 1;
-	guest_req.req_data = (__u64) &req;
-	guest_req.resp_data = (__u64) &resp;
+	guest_req.req_data = (__u64)&req;
+	guest_req.resp_data = (__u64)&resp;
 
 	/* Open the sev-guest device */
 	errno = 0;
 	fd = open(SEV_GUEST_DEVICE, O_RDWR);
-	if (fd == -1) {
+	if (fd == -1)
+	{
 		rc = errno;
 		perror("open");
 		goto out;
@@ -287,15 +303,17 @@ int request_key(struct options *options, uint8_t *key, size_t size)
 	/* Issue the guest request IOCTL */
 	errno = 0;
 	rc = ioctl(fd, SNP_GET_DERIVED_KEY, &guest_req);
-	if (rc == -1) {
+	if (rc == -1)
+	{
 		rc = errno;
 		perror("ioctl");
-		fprintf(stderr, "firmware error %llu\n", guest_req.fw_err);
+		fprintf(stderr, "firmware error %llu\n", guest_req.fw_error);
 		goto out_close;
 	}
 
 	/* Check that the key was successfully derived */
-	if (key_resp->status != 0 ) {
+	if (key_resp->status != 0)
+	{
 		fprintf(stderr, "firmware error %#x\n", key_resp->status);
 		rc = key_resp->status;
 		goto out_close;
@@ -305,7 +323,8 @@ int request_key(struct options *options, uint8_t *key, size_t size)
 	rc = EXIT_SUCCESS;
 
 out_close:
-	if (fd > 0) {
+	if (fd > 0)
+	{
 		close(fd);
 		fd = -1;
 	}
@@ -321,7 +340,8 @@ int write_key(const char *file_name, uint8_t *key, size_t size)
 	/* Open the output key file */
 	errno = 0;
 	key_file = fopen(file_name, "w+");
-	if (!key_file) {
+	if (!key_file)
+	{
 		rc = errno;
 		perror("fopen");
 		goto out;
@@ -329,7 +349,8 @@ int write_key(const char *file_name, uint8_t *key, size_t size)
 
 	/* Write the key to the output */
 	int count = fwrite(key, sizeof(char), size, key_file);
-	if (count != size) {
+	if (count != size)
+	{
 		rc = EIO;
 		fprintf(stderr, "fwrite failed.\n");
 		goto out_close;
@@ -339,7 +360,8 @@ int write_key(const char *file_name, uint8_t *key, size_t size)
 	rc = EXIT_SUCCESS;
 
 out_close:
-	if (key_file != stdin) {
+	if (key_file != stdin)
+	{
 		fclose(key_file);
 		key_file = NULL;
 	}
@@ -357,19 +379,22 @@ int main(int argc, char *argv[])
 
 	/* Parse command line options */
 	rc = parse_options(argc, argv, &options);
-	if (rc != EXIT_SUCCESS) {
+	if (rc != EXIT_SUCCESS)
+	{
 		print_usage();
 		goto exit;
 	}
 
-	if (options.do_help == true) {
+	if (options.do_help == true)
+	{
 		print_usage();
 		goto exit;
 	}
 
 	/* Retrieve the derived key from the SEV FW */
 	rc = request_key(&options, key, sizeof(key));
-	if (rc != EXIT_SUCCESS) {
+	if (rc != EXIT_SUCCESS)
+	{
 		errno = rc;
 		perror("request_key");
 		goto exit;
@@ -377,7 +402,8 @@ int main(int argc, char *argv[])
 
 	/* Write the key to the output file */
 	rc = write_key(options.key_filename, key, sizeof(key));
-	if (rc != EXIT_SUCCESS) {
+	if (rc != EXIT_SUCCESS)
+	{
 		errno = rc;
 		perror("write_key");
 		goto exit;
@@ -387,4 +413,3 @@ int main(int argc, char *argv[])
 exit:
 	exit(rc);
 }
-
