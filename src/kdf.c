@@ -307,7 +307,7 @@ int request_key(struct options *options, uint8_t *key, size_t size)
 	{
 		rc = errno;
 		perror("ioctl");
-		fprintf(stderr, "firmware error %llu\n", guest_req.fw_error);
+		fprintf(stderr, "firmware error %u\n", guest_req.fw_error);
 		goto out_close;
 	}
 
